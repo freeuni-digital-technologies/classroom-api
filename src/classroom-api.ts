@@ -3,15 +3,18 @@ import { Authenticator } from './authenticate'
 import fs from "fs";
 import path from "path";
 
-export function downloadFile(drive: drive_v3.Drive, id: string): Promise<any> {
+export const downloadError: string = "error saving downloaded file"
+export function downloadFile(drive: drive_v3.Drive, id: string, path?: string): Promise<any> {
     return new Promise((resolve, reject) => {
         drive.files.get({
             fileId: id,
             alt: 'media'
         }, {responseType: 'stream'}, (err, res) => {
-            if (err) {
-                console.log('Drive API returned an error :' + err)
-                reject(err)
+	    if (err ||  !res) {
+	    	if (path) console.log(path)
+		console.log(id + ': Drive API returned an error :' + err)
+                reject(downloadError)
+		return // 😶
             }
             resolve(res!.data)
         })
@@ -23,7 +26,8 @@ export function downloadZip(drive: drive_v3.Drive, id: string, path: string): Pr
 }
 
 export function saveFile(drive: drive_v3.Drive, id: string, filePath: string): Promise<string> {
-    return downloadFile(drive, id)
+	console.log(id, filePath)
+    return downloadFile(drive, id, filePath)
         .then((dataStream: any) => {
             return new Promise((resolve, reject) => {
                 const dest = fs.createWriteStream(filePath);

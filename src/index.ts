@@ -11,6 +11,7 @@ export * from './students'
 export * from './mailer'
 export { downloadAll, downloadSome, downloadAtInterval } from './downloadHW'
 export { Authenticator } from './authenticate'
+export { downloadError } from './classroom-api'
 
 export async function getSubmissions(subject: string, homework: string, studentList: StudentList, auth: Authenticator): Promise<Submission[]> {
 	let classroom = await ClassroomApi.findClass(subject, auth)
