@@ -83,6 +83,17 @@ function listCourses(classroom: classroom_v1.Classroom)
     })
 }
 
+export async function getDueDate(subject: string, homeworkTitle: string, auth: Authenticator): Promise<Date> {
+    let classroom = await ClassroomApi.findClass(subject, auth);
+    const courseWork = await classroom.listCourseWork();
+
+    return courseWork.filter(work => work.title === homeworkTitle).map((work): Date =>{
+        if(work.dueDate === undefined)
+            throw "Selected homework does not have due date"
+        return new Date(work.dueDate.year!, work.dueDate.month!, work.dueDate.day)
+    })[0]
+}
+
 export class ClassroomApi {
     static async findClass(name: string, authenticator: Authenticator) {
         const auth = await authenticator.authenticate()

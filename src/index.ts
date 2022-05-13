@@ -1,17 +1,19 @@
-import { ClassroomApi } from './classroom-api'
-import { StudentList } from './students'
-import { Authenticator  } from './authenticate'
-import { Submission } from 'dt-types'
-import { fromResponse } from './submission'
+import {ClassroomApi, getDueDate} from './classroom-api'
+import {StudentList} from './students'
+import {Authenticator} from './authenticate'
+import {Submission} from 'dt-types'
+import {fromResponse} from './submission'
+import {drive_v3} from "googleapis";
 //export * from './types'
 export { ClassroomApi, downloadFile, downloadZip, createDrive, saveFile } from './classroom-api'
-import { drive_v3 } from "googleapis" ;
+
 export type Drive = drive_v3.Drive
 export * from './students'
 export * from './mailer'
 export { downloadAll, downloadSome, downloadAtInterval } from './downloadHW'
 export { Authenticator } from './authenticate'
 export { downloadError } from './classroom-api'
+export { getDueDate } from './classroom-api'
 
 export async function getSubmissions(subject: string, homework: string, studentList: StudentList, auth: Authenticator): Promise<Submission[]> {
 	let classroom = await ClassroomApi.findClass(subject, auth)
