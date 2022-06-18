@@ -30,7 +30,8 @@ export function fromResponse(
 	)
 	if (submission.turnedIn() && response.assignmentSubmission?.attachments && response.assignmentSubmission?.attachments[0].driveFile) {
 		const attachments = response.assignmentSubmission?.attachments
-		const attachment = new Attachment(attachments![0].driveFile!)
+		const file = attachments![0].driveFile!
+		const attachment = new Attachment(file.id!, file.title!)
 		const timeStamp = getTimeStamp(response)
 		submission.setAttachment(attachment, timeStamp)
 	}
