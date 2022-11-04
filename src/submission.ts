@@ -1,10 +1,10 @@
 import { Attachment, Submission } from "dt-types";
-import { StudentSubmission } from "./types"
+import { ClassroomSubmission } from "./types"
 import { StudentList } from "./students";
 import { sortByDate } from "dt-utils";
 
 
-function getTimeStamp(response: StudentSubmission): Date {
+function getTimeStamp(response: ClassroomSubmission): Date {
 	const timeStamp = response.submissionHistory!
 		.filter(e => e.stateHistory)
 		.map(e => e.stateHistory!)
@@ -16,7 +16,7 @@ function getTimeStamp(response: StudentSubmission): Date {
 }
 
 export function fromResponse(
-	response: StudentSubmission,
+	response: ClassroomSubmission,
 	studentList: StudentList
 ) {
 	let profile = studentList.getStudentById(response.userId!)! // fetched from students.json
@@ -36,5 +36,4 @@ export function fromResponse(
 		submission.setAttachment(attachment, timeStamp)
 	}
 	return submission
-
 }

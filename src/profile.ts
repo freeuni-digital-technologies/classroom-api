@@ -1,39 +1,30 @@
-import {ClassroomApi} from './classroom-api'
-import {UserProfile} from './types'
-import {Authenticator} from './authenticate'
+import {ClassroomUserProfile} from "./types";
+import { StudentProfile} from "dt-types";
 
 const translit = require('translitit-latin-to-mkhedruli-georgian')
 
-function prepareProfile(p: UserProfile) {
-	delete p.permissions
-	delete p.photoUrl
-	p.emailId = p.emailAddress?.match(/(.*)@/)![1]
-	p = translitName(p)
-	return p
+export class Profile implements  StudentProfile {
+	id: string
+	georgianName: string
+	emailId: string
+	emailAddress: string
+	constructor(p: ClassroomUserProfile) {
+		this.id = p.id!
+		this.emailId = p.emailAddress?.match(/(.*)@/)![1]! // ეს ბოლო ძახილის ნიშანი იმიტომაა რომ @ ყოველთვის იქნება
+		this.georgianName = translitName(p.name?.givenName)
+		this.emailAddress = p.emailAddress!
+	}
 }
 
-export async function getSingleStudent(classroom: ClassroomApi, id: string): Promise<UserProfile> {
-	let p: UserProfile = await classroom.getStudentProfile(id) 
-	return prepareProfile(p)
+
+function translitName(latinName?: string): string {
+	const nameInGeorgian = translit(latinName)
+	const matches = replace.find(e => nameInGeorgian.includes(e[0]))
+	return matches ?
+		nameInGeorgian.replace(matches[0], matches[1])
+		: nameInGeorgian
 }
 
-export async function getStudentList(className: string, auth: Authenticator): Promise<UserProfile[]> {
-	return ClassroomApi
-		.findClass(className, auth)
-		.then(classroom => classroom.getUserProfiles())
-		.then(profiles => profiles
-			.map(prepareProfile)
-		)
-}
-
-function translitName(p: UserProfile): UserProfile {
-	const transed = translit(p.name?.givenName)
-	const matches = replace.find(e => transed.includes(e[0]))
-	p.georgianName = (matches) ?
-		transed.replace(matches[0], matches[1])
-		: transed
-	return p
-}
 const replace = [
 	['ტამარ', 'თამარ'],
 	['ტაკ', 'თაკ'],
@@ -67,6 +58,3 @@ const replace = [
 	['ელიზაბეთ', 'ელისაბედ']
 ]
 
-export async function downloadStudentList(className: string, auth: Authenticator): Promise<UserProfile[]> {
-	return getStudentList(className, auth)
-}

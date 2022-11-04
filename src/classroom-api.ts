@@ -1,130 +1,87 @@
-import {google, classroom_v1, drive_v3} from 'googleapis'
-import { Authenticator } from './authenticate'
-import fs from "fs";
-import path from "path";
-
+import {classroom_v1, drive_v3} from 'googleapis'
+import {Classroom, StudentProfile, Submission} from 'dt-types'
+import {fromResponse} from "./submission";
+import {Profile} from "./profile";
+import {StudentList} from "./students";
+import {ClassroomCourseWork} from "./types";
 export const downloadError: string = "error saving downloaded file"
-export function downloadFile(drive: drive_v3.Drive, id: string, path?: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-        drive.files.get({
-            fileId: id,
-            alt: 'media'
-        }, {responseType: 'stream'}, (err, res) => {
-	    if (err ||  !res) {
-	    	if (path) console.log(path)
-		console.log(id + ': Drive API returned an error :' + err)
-                reject(downloadError)
-		return // 😶
-            }
-            resolve(res!.data)
-        })
-    })
-}
 
-export function downloadZip(drive: drive_v3.Drive, id: string, path: string): Promise<string> {
-    return saveFile(drive, id, path)
-}
 
-export function saveFile(drive: drive_v3.Drive, id: string, filePath: string): Promise<string> {
-	console.log(id, filePath)
-    return downloadFile(drive, id, filePath)
-        .then((dataStream: any) => {
-            return new Promise((resolve, reject) => {
-                const dest = fs.createWriteStream(filePath);
-                dataStream
-                  .on('end', () => {
-                    console.log('Done downloading file: ' + filePath);
-                    dest.close();
-                    setTimeout(()=>resolve(filePath), 100) // weird erorrs occur without this timeout
-                    // resolve(filePath);
-                  })
-                  .on('error', (err: any) => {
-                    console.error('Error downloading file path=' + filePath + ' id=' + id);
-                    reject(err);
-                  })
-                  .pipe(dest)
-                    .on('error', (err: any) => {
-                        if (err.code == 'ENOENT') {
-                            fs.mkdirSync(path.dirname(filePath), {recursive: true})
-                        } else {
-                            throw err
-                        }
+export class GoogleClassroom implements Classroom {
+    private readonly studentList: StudentList
+    constructor(private classroomApi:  classroom_v1.Classroom,
+                private driveApi: drive_v3.Drive,
+                private classroomId: string,
+                studentListPath?: string) {
+        this.studentList = new StudentList(studentListPath)
+    }
+
+    getSubmissions = (name: string): Promise<Submission[]> => {
+        return this.findAssignmentId(name)
+            .then((assignmentId): Promise<classroom_v1.Schema$StudentSubmission[]> =>
+                new Promise((resolve, reject) => {
+                    this.classroomApi.courses.courseWork.studentSubmissions.list({
+                        courseWorkId: assignmentId,
+                        courseId: this.classroomId,
+                    }, (err, res) => {
+                        if (err) reject(err)
+                        resolve(res!.data.studentSubmissions!.filter(response => response.id && response.userId))
                     })
-                    // pipe to write stream
-            });
-        })
-}
-
-export function createDrive(
-                            authenticator: Authenticator,
-                            ): Promise<drive_v3.Drive> {
-    return authenticator.authenticate()
-        .then(auth => google.drive({version: 'v3', auth}))
-}
-
-function listCourses(classroom: classroom_v1.Classroom)
-    : Promise<classroom_v1.Schema$Course[]> {
-    return new Promise((resolve, reject) => {
-        classroom.courses.list({
-            pageSize: 10,
-        }, (err, res) => {
-		// ამ reject-ს სადღაც ვაიგნორებ (:
-        if (err) {
-            console.log(err)
-            reject('The API returned an error: ' + err)
-        }
-            const courses = res!.data.courses;
-            if (courses && courses.length) {
-                resolve(courses)
-            } else {
-                reject('No courses found.');
-            }
-        })
-    })
-}
-
-export async function getDueDate(subject: string, homeworkTitle: string, auth: Authenticator): Promise<Date> {
-    let classroom = await ClassroomApi.findClass(subject, auth);
-    const courseWork = await classroom.listCourseWork();
-
-    return courseWork.filter(work => work.title === homeworkTitle).map((work): Date =>{
-        if(work.dueDate === undefined)
-            throw "Selected homework does not have due date"
-        return new Date(work.dueDate.year!, work.dueDate.month!, work.dueDate.day)
-    })[0]
-}
-
-export class ClassroomApi {
-    static async findClass(name: string, authenticator: Authenticator) {
-        const auth = await authenticator.authenticate()
-        const classroom = google.classroom({version: 'v1', auth})
-        const drive = google.drive({version: 'v3', auth})
-        return listCourses(classroom)
-            .then(courses => {
-                const filtered = courses.filter(c => c.name == name)
-                if (filtered && filtered.length)
-                    return filtered[0].id!
-                else
-                    throw "no such course found"
+                })
+            ).then(async (submissions: classroom_v1.Schema$StudentSubmission[]) => {
+                await submissions.map(async response => {
+                    if (!this.studentList.getStudentById(response.userId!)) {
+                        const studentProfile = await this.getStudentProfile(response.userId!)
+                        this.studentList.add(studentProfile)
+                    }
+                })
+                return submissions
+                    .filter(response => this.studentList.getStudentById(response.userId!))
+                    .map(s => fromResponse(s, this.studentList))
             })
-            .then((id) => new ClassroomApi(id, classroom, drive))
     }
 
-    constructor(
-        private id: string,
-        private classroom: classroom_v1.Classroom,
-        private drive: drive_v3.Drive,
-    ) {
+    getUserProfiles = () =>
+        this.listCourseWork()
+            .then(coursework => coursework[0].title!)
+            .then(this.getSubmissionStudents)
+
+
+    getDueDate(homeworkTitle: string): Promise<Date> {
+        return this.findAssignment(homeworkTitle).then((courseWork): Date =>{
+            if(courseWork.dueDate === undefined)
+                throw new Error("Selected homework does not have due date")
+            return new Date(courseWork.dueDate.year!, courseWork.dueDate.month!, courseWork.dueDate.day)
+        })
     }
 
-    download(id: string) {
-        return downloadFile(this.drive, id)
+    private findAssignmentId(name: string): Promise<string> {
+        return this.findAssignment(name)
+            .then(assignment => assignment.id!)
     }
+    private findAssignment = (name: string): Promise<ClassroomCourseWork> =>
+        this.listCourseWork()
+            .then(courseWork => {
+                const filtered = courseWork.filter(c => c.title!.includes(name))
+                if (filtered && filtered.length)
+                    return filtered[0]
+                else
+                    throw name + ": no such assignment found"
+            })
 
-    async listCourseWork(): Promise<classroom_v1.Schema$CourseWork[]> {
+    private getStudentProfile(id: string): Promise<StudentProfile> {
         return new Promise((resolve, reject) => {
-            this.classroom.courses.courseWork.list({
-                courseId: this.id
+            this.classroomApi.userProfiles.get({userId: id}, (err, res) => {
+                if (err) reject(err)
+                resolve(new Profile(res!.data))
+            })
+        })
+    }
+
+    private listCourseWork(): Promise<classroom_v1.Schema$CourseWork[]> {
+        return new Promise((resolve, reject) => {
+            this.classroomApi.courses.courseWork.list({
+                courseId: this.classroomId
             }, (err, res) => {
                 if (err) reject('The API returned an error: ' + err);
                 resolve(res!.data.courseWork!)
@@ -132,47 +89,12 @@ export class ClassroomApi {
         })
     }
 
-    findAssignment = (name: string): Promise<string> =>
-        this.listCourseWork()
-            .then(courseWork => {
-                const filtered = courseWork.filter(c => c.title!.includes(name))
-                if (filtered && filtered.length)
-                    return filtered[0].id!
-                else
-                    throw name + ": no such assignment found"
-            })
-
-    getSubmissions = (name: string): Promise<classroom_v1.Schema$StudentSubmission[]> =>
-        this.findAssignment(name)
-            .then(assignmentId =>
-                new Promise((resolve, reject) => {
-                    this.classroom.courses.courseWork.studentSubmissions.list({
-                        courseWorkId: assignmentId,
-                        courseId: this.id,
-                    }, (err, res) => {
-                        if (err) reject(err)
-                        resolve(res!.data.studentSubmissions!)
-                    })
-                })
-            )
-
-    getStudentProfile(id: string): Promise<classroom_v1.Schema$UserProfile> {
-        return new Promise((resolve, reject) => {
-            this.classroom.userProfiles.get({userId: id}, (err, res) => {
-                if (err) reject(err)
-                resolve(res!.data)
-            })
-        })
-    }
-
-    getSubmissionStudents = (name: string): Promise<classroom_v1.Schema$UserProfile[]> =>
+    private getSubmissionStudents = (name: string): Promise<StudentProfile[]> =>
         this.getSubmissions(name)
-            .then(submissions => submissions.map(s => s.userId!))
+            .then(submissions => submissions.map(s => s.id!))
             .then(submissions => submissions.map(s => this.getStudentProfile(s)))
             .then(userIdPromises => Promise.all(userIdPromises))
 
-    getUserProfiles = () =>
-        this.listCourseWork()
-            .then(coursework => coursework[0].title!)
-            .then(this.getSubmissionStudents)
+
 }
+

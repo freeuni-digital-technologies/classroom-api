@@ -1,10 +1,9 @@
 import fs from 'fs'
-import { ClassroomApi } from './classroom-api'
-import { UserProfile } from './types'
-import { getSingleStudent } from './profile'
+import { StudentProfile } from "dt-types";
+
 
 export class StudentList {
-	private readonly students: UserProfile[]
+	private readonly students: StudentProfile[]
 	private readonly path: string
 	constructor(filePath?: string) {
 		if (!filePath) {
@@ -24,15 +23,12 @@ export class StudentList {
 	    return this.students.find(e => e.emailId == emailId)
 	}
 	 
-	getStudentById(id: string): UserProfile | undefined {
+	getStudentById(id: string): StudentProfile | undefined {
 	    return this.students.find(e => e.id == id)
 	}
 
-	async fetchStudentById(classroom: ClassroomApi, id: string): Promise<UserProfile | undefined> {
-		let student = await getSingleStudent(classroom, id)
+	add(student: StudentProfile) {
 		this.students.push(student)
 		fs.writeFileSync(this.path, JSON.stringify(this.students, null, '\t'))
-		return student 
 	}
-
 }

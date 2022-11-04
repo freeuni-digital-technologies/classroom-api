@@ -1,7 +1,9 @@
 import fs from 'fs'
 import yargs from 'yargs'
-import { Authenticator } from '.'
-import { downloadStudentList } from './profile'
+import {Authenticator} from "./authenticate";
+import {setupGoogleApi} from "./google-api";
+import {StudentProfile} from "dt-types";
+
 const argv = yargs.options({
     p: {
         alias:'path',
@@ -18,6 +20,11 @@ const argv = yargs.options({
 }).argv
 
 
+async function getStudentList(className: string, auth: Authenticator, path: string): Promise<StudentProfile[]> {
+    return setupGoogleApi(auth, className, path)
+        .then(api => api.classroom.getUserProfiles())
+}
+
 function main(){
     let path = argv.p
     let className = argv.c
@@ -28,7 +35,8 @@ function main(){
     const auth = new Authenticator()
     console.log(path)
     console.log(className)
-    downloadStudentList(className, auth).then(profiles => fs.writeFileSync(path, JSON.stringify(profiles, null, '\t'))) 
+    getStudentList(className, auth, path)
+        .then(profiles => fs.writeFileSync(path, JSON.stringify(profiles, null, '\t')))
 }
 
 main()

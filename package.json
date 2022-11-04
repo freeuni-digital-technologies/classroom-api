@@ -6,11 +6,11 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc -b",
+    "watch-build": "tsc -w",
     "test": "ts-mocha test/*.test.ts",
-    "watch": "ts-mocha -w test/*.test.ts --watch-files test/*test.ts,src/**/*.ts",
+    "watch-tests": "ts-mocha -w test/*.test.ts --watch-files test/*test.ts,src/**/*.ts",
     "coverage": "nyc ts-mocha test/*.test.ts",
-    "getlist": "node lib/downloadStudentList.js",
-    "download": "node lib/downloadHW.js"
+    "getlist": "node lib/downloadStudentList.js"
   },
   "devDependencies": {
     "@types/chai": "^4.2.11",

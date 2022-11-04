@@ -1,11 +1,6 @@
-import {classroom_v1, drive_v3} from 'googleapis'
-export interface UserProfile extends classroom_v1.Schema$UserProfile {
-    georgianName?: string
-    emailId?: string
-}
+import {classroom_v1} from 'googleapis'
 
-export interface StudentSubmission extends classroom_v1.Schema$StudentSubmission {
-
-}
-
-export type Drive = drive_v3.Drive
+export type ClassroomUserProfile = classroom_v1.Schema$UserProfile
+export type ClassroomSubmission = classroom_v1.Schema$StudentSubmission
+export type ClassroomCourseWork = classroom_v1.Schema$CourseWork
+// export type Drive = drive_v3.Drive
