@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc -b",
+    "download": "node lib/homework-downloader.js",
     "watch-build": "tsc -w",
     "test": "ts-mocha test/*.test.ts",
     "watch-tests": "ts-mocha -w test/*.test.ts --watch-files test/*test.ts,src/**/*.ts",
@@ -26,6 +27,7 @@
     "unzipper": "^0.10.11"
   },
   "dependencies": {
+    "@fluffy-spoon/substitute": "^1.208.0",
     "dotenv": "^8.2.0",
     "googleapis": "39",
     "nodemailer": "^6.4.0",
