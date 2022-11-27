@@ -4,12 +4,14 @@ import {fromResponse} from "./submission";
 import {Profile} from "./profile";
 import {StudentList} from "./students";
 import {ClassroomCourseWork} from "./types";
+
 export const downloadError: string = "error saving downloaded file"
 
 
 export class GoogleClassroom implements Classroom {
     private readonly studentList: StudentList
-    constructor(private classroomApi:  classroom_v1.Classroom,
+
+    constructor(private classroomApi: classroom_v1.Classroom,
                 private driveApi: drive_v3.Drive,
                 private classroomId: string,
                 studentListPath?: string) {
@@ -47,18 +49,22 @@ export class GoogleClassroom implements Classroom {
             .then(this.getSubmissionStudents)
 
 
+    // Returns due date in UTC
     getDueDate(homeworkTitle: string): Promise<Date> {
-        return this.findAssignment(homeworkTitle).then((courseWork): Date =>{
-            if(courseWork.dueDate === undefined)
-                throw new Error("Selected homework does not have due date")
-            return new Date(courseWork.dueDate.year!, courseWork.dueDate.month!, courseWork.dueDate.day)
-        })
+        return this.findAssignment(homeworkTitle)
+            .then((courseWork): Date => {
+                if (courseWork.dueDate === undefined || courseWork.dueTime === undefined)
+                    throw new Error("Selected homework does not have due date")
+                return new Date(Date.UTC(courseWork.dueDate.year!, courseWork.dueDate.month!, courseWork.dueDate.day,
+                    courseWork.dueTime.hours, courseWork.dueTime.minutes));
+            })
     }
 
     private findAssignmentId(name: string): Promise<string> {
         return this.findAssignment(name)
             .then(assignment => assignment.id!)
     }
+
     private findAssignment = (name: string): Promise<ClassroomCourseWork> =>
         this.listCourseWork()
             .then(courseWork => {
