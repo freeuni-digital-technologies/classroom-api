@@ -15,13 +15,13 @@ const transporter = nodemailer.createTransport({
 export function sendEmails(emails :Array<any>, interval :number) {
     emails.forEach((email :any, index :number) => {
         setTimeout(() => {
-            sendEmail(email.to, email.subject, email.text, email.callback, email.attachments)
+            sendEmail(email.to, email.subject, email.text, email.callback, email.attachments, email.replyTo)
         }, index*interval)
     })
 }
 
 // TODO fix these types
-export function sendEmail(to :string, subject :string, text :string, callback?:any, attachments?:any) {
+export function sendEmail(to :string, subject :string, text :string, callback?:any, attachments?:any, replyTo?: string) {
     const mailOptions = {
         from: email,
         to: to,
@@ -34,6 +34,7 @@ export function sendEmail(to :string, subject :string, text :string, callback?:a
             </body>
             </html>
         `,
+        replyTo: replyTo,
         attachments: undefined
     };
     if (attachments) {
