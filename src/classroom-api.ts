@@ -78,7 +78,10 @@ export class GoogleClassroom implements Classroom {
     private getStudentProfile(id: string): Promise<StudentProfile> {
         return new Promise((resolve, reject) => {
             this.classroomApi.userProfiles.get({userId: id}, (err, res) => {
-                if (err) reject(err)
+                if (err) {
+                    reject(err)
+                    return // ff
+                }
                 resolve(new Profile(res!.data))
             })
         })
