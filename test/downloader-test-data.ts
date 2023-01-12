@@ -1,5 +1,3 @@
-import {Submission} from "dt-types";
-
 export const submissions = [
     {
         id: "Cg0I88qEhAkQ553R_ZwQ",
