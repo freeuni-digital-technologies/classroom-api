@@ -28,7 +28,7 @@ export function fromResponse(
 		response.alternateLink!,
 		response.late!
 	)
-	if (submission.turnedIn() && response.assignmentSubmission?.attachments && response.assignmentSubmission?.attachments[0].driveFile) {
+	if (response.assignmentSubmission?.attachments && response.assignmentSubmission?.attachments[0].driveFile) {
 		const attachments = response.assignmentSubmission?.attachments
 		const file = attachments![0].driveFile!
 		const attachment = new Attachment(file.id!, file.title!)
