@@ -26,7 +26,8 @@ export function fromResponse(
 		profile.emailAddress!, 
 		response.state!,
 		response.alternateLink!,
-		response.late!
+		response.late!,
+		response.assignedGrade
 	)
 	if (response.assignmentSubmission?.attachments && response.assignmentSubmission?.attachments[0].driveFile) {
 		const attachments = response.assignmentSubmission?.attachments
