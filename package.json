@@ -29,6 +29,7 @@
   "dependencies": {
     "@fluffy-spoon/substitute": "^1.208.0",
     "dotenv": "^8.2.0",
+    "dt-types": "^1.0.2",
     "googleapis": "39",
     "nodemailer": "^6.4.0",
     "path": "^0.12.7",

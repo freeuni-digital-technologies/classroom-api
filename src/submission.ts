@@ -1,7 +1,6 @@
 import { Attachment, Submission } from "dt-types";
 import { ClassroomSubmission } from "./types"
 import { StudentList } from "./students";
-import { sortByDate } from "dt-utils";
 
 
 function getTimeStamp(response: ClassroomSubmission): Date {
@@ -37,4 +36,8 @@ export function fromResponse(
 		submission.setAttachment(attachment, timeStamp)
 	}
 	return submission
+}
+
+function sortByDate(a: Date, b: Date): number {
+    return Number(a.getTime() < b.getTime()) - Number(a.getTime() > b.getTime())
 }
