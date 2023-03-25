@@ -1,6 +1,6 @@
 {
   "name": "classroom-api",
-  "version": "1.0.2",
+  "version": "1.0.0",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "license": "MIT",
@@ -13,6 +13,10 @@
     "coverage": "nyc ts-mocha test/*.test.ts",
     "getlist": "node lib/downloadStudentList.js"
   },
+  "files": [
+    "src",
+    "lib"
+  ],
   "devDependencies": {
     "@types/chai": "^4.2.11",
     "@types/mocha": "^7.0.2",
